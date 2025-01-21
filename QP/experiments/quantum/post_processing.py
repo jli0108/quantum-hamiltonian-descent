@@ -5,14 +5,15 @@ import multiprocessing
 from joblib import Parallel, delayed
 from os.path import join
 import sys
+from time import time
 
 # import data directory
 sys.path.insert(1, '../../../')
 from config import * 
 
 
-def post_processing_qaa(benchmark_name, instance, SCHEDULE, resolution):
-	print(f"Run QAA-post-processing on instance No. {instance} from {benchmark_name}.")
+def post_processing(benchmark_name, instance, resolution, device_label, alg):
+	print(f"Run post-processing on instance No. {instance} from {benchmark_name}.")
 
 	benchmark_dir = join(DATA_DIR_QP, benchmark_name)
 	instance_dir = join(benchmark_dir, f"instance_{instance}")
@@ -25,11 +26,11 @@ def post_processing_qaa(benchmark_name, instance, SCHEDULE, resolution):
 		Q_c = np.load(f)
 		b_c = np.load(f)
 
-	# Load QAA sample data
-	sample_filename = f"advantage6_qaa_schedule{SCHEDULE}_rez{resolution}_sample_{instance}.npy"
-	qaa_filename = join(instance_dir, sample_filename)
-	qaa_samples = np.load(qaa_filename)
-	numruns = len(qaa_samples)
+	# Load sample data
+	sample_filename = f"dwave_{device_label}_{alg}_rez{resolution}_runtime_{instance}.npy"
+	filename = join(instance_dir, sample_filename)
+	samples = np.load(filename)
+	numruns = len(samples)
 	print(f'ID: {instance} -- Number of runs: {numruns}.')
 
 	# Build the post-processing model
@@ -42,12 +43,15 @@ def post_processing_qaa(benchmark_name, instance, SCHEDULE, resolution):
 	def qp_der(x):
 		return Q @ x + b
 
-	post_qaa_samples = np.zeros((numruns, dimension))
+	post_samples = np.zeros((numruns, dimension))
+	runtimes = []
 	for k in range(numruns):
-		x0 = qaa_samples[k]
+		x0 = samples[k]
+		start_time = time()
 		result = minimize(qp_fun, x0, method='TNC', jac=qp_der, bounds=bounds,
                             options={'gtol': 1e-9, 'eps': 1e-9})
-		post_qaa_samples[k] = result.x
+		runtimes.append(time() - start_time)
+		post_samples[k] = result.x
 		if k % 100 == 0:
 			print(f'ID: {instance} -- The {k}-th run has completed.')
 
@@ -55,8 +59,13 @@ def post_processing_qaa(benchmark_name, instance, SCHEDULE, resolution):
 	post_sample_filename = "post_" + sample_filename
 	post_filename = join(instance_dir, post_sample_filename)
 	with open(post_filename , 'wb') as f:
-		np.save(f, post_qaa_samples)
-	print(f"Benchmark: {benchmark_name}, instance: {instance}, post-processed QHD sample saved.")
+		np.save(f, post_samples)
+	
+	qpu_time = np.load(join(benchmark_dir, f"instance_{instance}/dwave_{device_label}_{alg}_rez{resolution}_runtime_{instance}.npy"))[0]
+	# Save the average runtime
+	np.save(join(instance_dir, f"post_adv_{alg}_rez{resolution}_runtime_{instance}.npy"), np.average(runtimes) + qpu_time)
+	
+	print(f"Benchmark: {benchmark_name}, instance: {instance}, post-processed sample saved.")
 
 	return 
 
@@ -65,10 +74,20 @@ if __name__ == "__main__":
 	dimension = 75
 	sparsity = 5
 	benchmark_name = f"QP-{dimension}d-{sparsity}s"
-	SCHEDULE = "A"
 	num_instances = 50
 	resolution = 8
+	alg = "qhd"
+	
+
+	device_name = "Advantage_system6.4"
+	# device_name = "Advantage2_prototype2.6"
+
+	if device_name == "Advantage_system6.4":
+		device_label = "adv"
+	elif device_name == "Advantage2_prototype2.6":
+		device_label = "adv2"
+
 	num_cores = multiprocessing.cpu_count()
 	print(f'Num. of cores: {num_cores}.')
 
-	par_list = Parallel(n_jobs=num_cores)(delayed(post_processing_qaa)(benchmark_name, tid, SCHEDULE, resolution) for tid in range(num_instances))
+	par_list = Parallel(n_jobs=num_cores)(delayed(post_processing)(benchmark_name, tid, resolution, device_label, alg) for tid in range(num_instances))
