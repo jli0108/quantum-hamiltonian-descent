@@ -11,7 +11,7 @@ from joblib import Parallel, delayed
 from itertools import product
 
 # Please change the data directory and benchmark name
-DATA_DIR = "/Users/lengjiaqi/QHD_DATA/QP"
+DATA_DIR = "/home/jli0108/QHD_DATA/QP"
 benchmark_name = "QP-5d"
 benchmark_dir = join(DATA_DIR, benchmark_name)
 
@@ -60,7 +60,7 @@ def classical_simulation_qhd(instance):
 	Bs = advantage_df['B(s) (GHz)'] #unit: GHz
 
 	# D-Wave experiment parameters
-	r = 8 # resolution 
+	r = 4 # resolution 
 	D = np.zeros((r+1,r+1))
 	X = np.zeros((r+1,r+1))
 	for j in range(r):
@@ -170,7 +170,7 @@ def classical_simulation_qaa(instance):
 	Bs = advantage_df['B(s) (GHz)'] #unit: GHz
 
 	# Setup parameters
-	resolution = 8
+	resolution = 4
 	qubit_per_var = int(np.log2(resolution)) + 1
 	n_qubits = qubit_per_var * dimension
 
@@ -187,7 +187,6 @@ def classical_simulation_qaa(instance):
 		HD += kron(Id_left, kron(X, Id_right))
 
 	# Potential operators
-	resolution = 8
 	p = np.array([2**(-(qubit_per_var-i)) for i in range(qubit_per_var)])
 	p[0] = 2**(-(qubit_per_var-1))
 	Id = np.identity(dimension)
@@ -197,7 +196,7 @@ def classical_simulation_qaa(instance):
 	R_qubo = (b - 2 * sigma * b_c.T @ Q_c) @ P
 	U_diag = []
 	for j in range(2**n_qubits):
-		basis_str = f"{j:020b}"
+		basis_str = np.binary_repr(j, n_qubits)
 		basis_state = np.array([int(c) for c in basis_str])
 		U_val = basis_state @ Q_qubo @ basis_state + basis_state @ R_qubo
 		U_diag.append(U_val)
@@ -239,7 +238,7 @@ def classical_simulation_qaa(instance):
 		buffer = random.choices(np.arange(2**n_qubits), weights = distribution, k = numruns)
 		for idx in range(numruns):
 			sample = buffer[idx]
-			sample_str = f"{sample:020b}"
+			sample_str = np.binary_repr(sample, n_qubits)
 			sample_state = np.array([int(c) for c in sample_str])
 			simulation_samples[idx] = P @ sample_state
 		'''
@@ -264,4 +263,4 @@ if __name__ == "__main__":
 	print(f'Num. of cores: {num_cores}.')
 	num_instances = 10
 	par_list = Parallel(n_jobs=num_cores)(delayed(classical_simulation_qaa)(tid) for tid in range(num_instances))
-	#par_list = Parallel(n_jobs=num_cores)(delayed(classical_simulation_qhd)(tid) for tid in range(num_instances))
+	par_list = Parallel(n_jobs=num_cores)(delayed(classical_simulation_qhd)(tid) for tid in range(num_instances))
