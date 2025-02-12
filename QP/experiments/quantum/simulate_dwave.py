@@ -52,8 +52,8 @@ def classical_simulation_qhd(instance):
 	dimension = len(Q)
 	
 	# Load annealing parameters (Advantage6)
-	anneal_schedule_filename = '09-1273A-A_Advantage_system6_1_annealing_schedule.xlsx'
-	sheet_name = 'processor-annealing-schedule'
+	anneal_schedule_filename = '09-1273A-E_Advantage_system6_4_annealing_schedule.xlsx'
+	sheet_name = 'Standard-Annealing Schedule'
 	advantage_df = pd.read_excel(anneal_schedule_filename, sheet_name=sheet_name)
 	fraction = advantage_df['s']
 	As = advantage_df['A(s) (GHz)'] #unit: GHz
@@ -140,7 +140,7 @@ def classical_simulation_qhd(instance):
 		'''
 
 		# Save samples from distribution
-		sample_filename = join(instance_dir, f"advantage6_sim_qhd_rez{r}_T{tf}_sample_{instance}.npy")
+		sample_filename = join(instance_dir, f"adv_6.4_sim_qhd_rez{r}_T{tf}_sample_{instance}.npy")
 		np.save(sample_filename, simulation_samples)
 		print(f'Instance {instance}, tf = {tf}, sample saved.\n')
 
@@ -162,8 +162,8 @@ def classical_simulation_qaa(instance):
 	dimension = len(Q)
 
 	# Load annealing parameters (Advantage6)
-	anneal_schedule_filename = '09-1273A-A_Advantage_system6_1_annealing_schedule.xlsx'
-	sheet_name = 'processor-annealing-schedule'
+	anneal_schedule_filename = '09-1273A-E_Advantage_system6_4_annealing_schedule.xlsx'
+	sheet_name = 'Standard-Annealing Schedule'
 	advantage_df = pd.read_excel(anneal_schedule_filename, sheet_name=sheet_name)
 	fraction = advantage_df['s']
 	As = advantage_df['A(s) (GHz)'] #unit: GHz
@@ -251,7 +251,7 @@ def classical_simulation_qaa(instance):
 		'''
 
 		# Save samples from distribution
-		sample_filename = join(instance_dir, f"advantage6_sim_qaa_rez{resolution}_T{tf}_sample_{instance}.npy")
+		sample_filename = join(instance_dir, f"adv_6.4_sim_qaa_rez{resolution}_T{tf}_sample_{instance}.npy")
 		np.save(sample_filename, simulation_samples)
 		print(f'Instance {instance}, tf = {tf}, sample saved.\n')
 
